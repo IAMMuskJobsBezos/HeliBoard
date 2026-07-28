@@ -141,6 +141,14 @@ val defaultPinnedToolbarPref = entries.filterNot { it == CLOSE_HISTORY }.joinToS
     it.name + Separators.KV + false
 }
 
+// Elderly-phone shipped default: only VOICE is pinned, so it sits inline with the suggestion
+// strip (same row, no toolbar expansion needed) instead of hidden behind the expand arrow.
+val defaultElderPinnedToolbarPref by lazy {
+    val others = entries.filterNot { it == VOICE || it == CLOSE_HISTORY }
+    VOICE.name + Separators.KV + true + Separators.ENTRY +
+            others.joinToString(Separators.ENTRY) { it.name + Separators.KV + false }
+}
+
 val defaultClipboardToolbarPref by lazy {
     val default = listOf(CLEAR_CLIPBOARD, UP, DOWN, LEFT, RIGHT, UNDO, CUT, COPY, PASTE, SELECT_WORD, CLOSE_HISTORY)
     val others = entries.filterNot { it in default }
@@ -178,13 +186,13 @@ private fun upgradeToolbarPref(prefs: SharedPreferences, pref: String, default: 
 
 fun getEnabledToolbarKeys(prefs: SharedPreferences) = getEnabledToolbarKeys(prefs, Settings.PREF_TOOLBAR_KEYS, defaultToolbarPref)
 
-fun getPinnedToolbarKeys(prefs: SharedPreferences) = getEnabledToolbarKeys(prefs, Settings.PREF_PINNED_TOOLBAR_KEYS, defaultPinnedToolbarPref)
+fun getPinnedToolbarKeys(prefs: SharedPreferences) = getEnabledToolbarKeys(prefs, Settings.PREF_PINNED_TOOLBAR_KEYS, Defaults.PREF_PINNED_TOOLBAR_KEYS)
 
 fun getEnabledClipboardToolbarKeys(prefs: SharedPreferences) = getEnabledToolbarKeys(prefs, Settings.PREF_CLIPBOARD_TOOLBAR_KEYS, defaultClipboardToolbarPref)
 
 fun addPinnedKey(prefs: SharedPreferences, key: ToolbarKey) {
     // remove the existing version of this key and add the enabled one after the last currently enabled key
-    val string = prefs.getString(Settings.PREF_PINNED_TOOLBAR_KEYS, defaultPinnedToolbarPref)!!
+    val string = prefs.getString(Settings.PREF_PINNED_TOOLBAR_KEYS, Defaults.PREF_PINNED_TOOLBAR_KEYS)!!
     val keys = string.split(Separators.ENTRY).toMutableList()
     keys.removeAll { it.startsWith(key.name + Separators.KV) }
     val lastEnabledIndex = keys.indexOfLast { it.endsWith("true") }
@@ -194,7 +202,7 @@ fun addPinnedKey(prefs: SharedPreferences, key: ToolbarKey) {
 
 fun removePinnedKey(prefs: SharedPreferences, key: ToolbarKey) {
     // just set it to disabled
-    val string = prefs.getString(Settings.PREF_PINNED_TOOLBAR_KEYS, defaultPinnedToolbarPref)!!
+    val string = prefs.getString(Settings.PREF_PINNED_TOOLBAR_KEYS, Defaults.PREF_PINNED_TOOLBAR_KEYS)!!
     val result = string.split(Separators.ENTRY).joinToString(Separators.ENTRY) {
         if (it.startsWith(key.name + Separators.KV))
             key.name + Separators.KV + "false"

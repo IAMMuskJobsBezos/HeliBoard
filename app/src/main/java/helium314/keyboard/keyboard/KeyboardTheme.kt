@@ -23,6 +23,7 @@ import helium314.keyboard.latin.common.DynamicColors
 import helium314.keyboard.latin.settings.Defaults
 import helium314.keyboard.latin.settings.Settings
 import helium314.keyboard.latin.utils.ResourceUtils
+import androidx.core.graphics.ColorUtils
 import helium314.keyboard.latin.utils.brightenOrDarken
 import helium314.keyboard.latin.utils.isBrightColor
 import helium314.keyboard.latin.utils.isGoodContrast
@@ -51,6 +52,7 @@ private constructor(val themeId: Int, @JvmField val mStyleId: Int) {
         // new themes that are just colors
         const val THEME_LIGHT = "light"
         const val THEME_HOLO_WHITE = "holo_white"
+        const val THEME_ELDER = "elder"
         const val THEME_DARK = "dark"
         const val THEME_DARKER = "darker"
         const val THEME_BLACK = "black"
@@ -66,6 +68,7 @@ private constructor(val themeId: Int, @JvmField val mStyleId: Int) {
         const val THEME_SAND = "sand"
         const val THEME_VIOLETTE = "violette"
         fun getAvailableDefaultColors(prefs: SharedPreferences, isNight: Boolean) = listOfNotNull(
+            THEME_ELDER,
             if (!isNight) THEME_LIGHT else null, THEME_DARK,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) THEME_DYNAMIC else null,
             if (prefs.getString(Settings.PREF_THEME_STYLE, Defaults.PREF_THEME_STYLE) == STYLE_HOLO) THEME_HOLO_WHITE else null,
@@ -176,6 +179,52 @@ private constructor(val themeId: Int, @JvmField val mStyleId: Int) {
                     ContextCompat.getColor(context, R.color.key_hint_letter_color_lxx_dark),
                     keyboardBackground = backgroundImage
                 )
+                // TODO (open, 2026-07-27, user-reported): the pinned voice key in
+                // SuggestionStripView's suggestion strip (see updateVoiceKey()) is reported by
+                // the user as (a) not reliably appearing on their actual test device despite
+                // being forced visible in updateVoiceKey(), and (b) even when visible, not
+                // styled the way it should be - it should look like the "Voice" pill used
+                // outside the strip (app-level UI in Messages/Notes: outlined pill, mic icon +
+                // "Voice" text label), not a bare small icon glyph. Needs on-device
+                // re-verification and a real fix, not just re-asserting it works from adb
+                // screenshots. Do not mark this done again without the user confirming on-device.
+                //
+                // TODO (open, 2026-07-27, user-reported): a request to delete two specific keys
+                // from the bottom row (functional_keys.json) was attempted and reverted twice -
+                // guesses at "the two icons showing 1234 going to the phone keypad" and "the
+                // weird square thing right of the spacebar" were both wrong. User will provide a
+                // screenshot with the two keys circled before this is attempted again. Do not
+                // guess again - wait for that screenshot.
+                //
+                // Elderly-phone shipped default: light rounded/bordered keys matched pixel-for-
+                // pixel against a reference screenshot (background/key/space fills sampled
+                // directly from it). Enter/shift/backspace/?123 all key off ELDER_LAVENDER - the
+                // same lavender the voice/mic key is outlined in - so every special key is
+                // provably one hue: Enter is the base shade at full saturation (white icon on it
+                // is ~8:1 contrast), shift/backspace/?123 are that same hue with saturation
+                // pulled back and lightness raised (muted/pale, not just a darker tint of the
+                // same intensity), and both tiers darken further on press through the existing
+                // brightenOrDarken() state-list logic.
+                THEME_ELDER -> {
+                    val elderLavender = "#5E35B1".toColorInt() // accent -> Enter key + voice/mic key
+                    val hsl = floatArrayOf(0f, 0f, 0f)
+                    ColorUtils.colorToHSL(elderLavender, hsl)
+                    hsl[1] = (hsl[1] - 0.20f).coerceAtLeast(0f) // less saturated
+                    hsl[2] = (hsl[2] + 0.40f).coerceAtMost(0.95f) // lighter, not as dark
+                    val elderLavenderMuted = ColorUtils.HSLToColor(hsl)
+                    DefaultColors(
+                        themeStyle,
+                        hasBorders,
+                        elderLavender,
+                        "#E9EAED".toColorInt(), // background behind/between keys
+                        "#FFFFFF".toColorInt(), // letter/number key fill
+                        elderLavenderMuted, // shift/backspace/?123 fill: same hue, muted + lightened
+                        "#FFFFFF".toColorInt(), // space bar fill
+                        "#3C4043".toColorInt(), // key text
+                        "#9AA0A6".toColorInt(), // hint text (top-corner numbers)
+                        keyboardBackground = backgroundImage
+                    )
+                }
                 THEME_HOLO_WHITE -> DefaultColors(
                     themeStyle,
                     hasBorders,

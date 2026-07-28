@@ -503,7 +503,11 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
     fun updateVoiceKey() {
         val show = Settings.getValues().mShowsVoiceInputKey
         toolbar.findViewWithTag<View>(ToolbarKey.VOICE)?.isVisible = show
-        pinnedKeys.findViewWithTag<View>(ToolbarKey.VOICE)?.isVisible = show
+        // Elderly-phone build: the pinned voice key stays visible in the suggestion strip
+        // regardless of whether a system voice-input IME is currently registered (there isn't
+        // one yet - that's a separate, not-yet-built phase). It's a no-op tap until that engine
+        // exists, but it must always be present in the row rather than flicker in and out.
+        pinnedKeys.findViewWithTag<View>(ToolbarKey.VOICE)?.isVisible = true
     }
 
     private fun updateKeys() {

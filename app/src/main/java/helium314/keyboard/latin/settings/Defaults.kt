@@ -15,7 +15,7 @@ import helium314.keyboard.latin.utils.LayoutType
 import helium314.keyboard.latin.utils.POPUP_KEYS_LABEL_DEFAULT
 import helium314.keyboard.latin.utils.POPUP_KEYS_ORDER_DEFAULT
 import helium314.keyboard.latin.utils.defaultClipboardToolbarPref
-import helium314.keyboard.latin.utils.defaultPinnedToolbarPref
+import helium314.keyboard.latin.utils.defaultElderPinnedToolbarPref
 import helium314.keyboard.latin.utils.defaultToolbarPref
 
 object Defaults {
@@ -44,13 +44,13 @@ object Defaults {
     }
 
     private const val DEFAULT_SIZE_SCALE = 1.0f // 100%
-    const val PREF_THEME_STYLE = KeyboardTheme.STYLE_MATERIAL
+    const val PREF_THEME_STYLE = KeyboardTheme.STYLE_ROUNDED
     fun PREF_ICON_STYLE(prefs: SharedPreferences) = prefs.getString(Settings.PREF_THEME_STYLE, PREF_THEME_STYLE)!!
-    const val PREF_THEME_COLORS = KeyboardTheme.THEME_LIGHT
-    const val PREF_THEME_COLORS_NIGHT = KeyboardTheme.THEME_DARK
-    const val PREF_THEME_KEY_BORDERS = false
+    const val PREF_THEME_COLORS = KeyboardTheme.THEME_ELDER
+    const val PREF_THEME_COLORS_NIGHT = KeyboardTheme.THEME_ELDER
+    const val PREF_THEME_KEY_BORDERS = true
     @JvmField
-    val PREF_THEME_DAY_NIGHT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+    val PREF_THEME_DAY_NIGHT = false // ship one fixed look; don't flip theme with system light/dark
     const val PREF_CUSTOM_ICON_NAMES = ""
     const val PREF_TOOLBAR_CUSTOM_KEY_CODES = ""
     const val PREF_AUTO_CAP = true
@@ -85,19 +85,27 @@ object Defaults {
     const val PREF_ENABLE_SPLIT_KEYBOARD = false
     @JvmField
     val PREF_SPLIT_SPACER_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
+    // Elderly-phone shipped defaults: bigger keys and labels than stock (see plan Phase 2).
+    private const val ELDER_KEY_SCALE = 1.18f
+    private const val ELDER_BOTTOM_ROW_SCALE = 1.12f
+    private const val ELDER_BOTTOM_PADDING_SCALE = 1.4f
+    private const val ELDER_FONT_SCALE = 1.18f
+    private const val ELDER_HINT_FONT_SCALE = 1.1f
     @JvmField
-    val PREF_KEYBOARD_HEIGHT_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
+    val PREF_KEYBOARD_HEIGHT_SCALE = Array(4) { ELDER_KEY_SCALE }
     @JvmField
-    val PREF_BOTTOM_ROW_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
+    val PREF_BOTTOM_ROW_SCALE = Array(4) { ELDER_BOTTOM_ROW_SCALE }
     @JvmField
-    // DEFAULT_SIZE_SCALE for portrait, 0 for landscape (normal and folded)
-    val PREF_BOTTOM_PADDING_SCALE = arrayOf(DEFAULT_SIZE_SCALE, 0f, DEFAULT_SIZE_SCALE, 0f)
+    // ELDER_BOTTOM_PADDING_SCALE for portrait, 0 for landscape (normal and folded) - this app
+    // suite is portrait-locked, so the landscape entries are unused; kept at the stock 0
+    // convention rather than introducing new landscape behavior.
+    val PREF_BOTTOM_PADDING_SCALE = arrayOf(ELDER_BOTTOM_PADDING_SCALE, 0f, ELDER_BOTTOM_PADDING_SCALE, 0f)
     @JvmField
     val PREF_SIDE_PADDING_SCALE = Array(8) { 0f }
     @JvmField
     val PREF_KEY_GAP_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
-    const val PREF_FONT_SCALE = DEFAULT_SIZE_SCALE
-    const val PREF_HINT_FONT_SCALE = DEFAULT_SIZE_SCALE
+    const val PREF_FONT_SCALE = ELDER_FONT_SCALE
+    const val PREF_HINT_FONT_SCALE = ELDER_HINT_FONT_SCALE
     const val PREF_EMOJI_FONT_SCALE = DEFAULT_SIZE_SCALE
     const val PREF_EMOJI_KEY_FIT = true
     const val PREF_EMOJI_SKIN_TONE = ""
@@ -163,11 +171,15 @@ object Defaults {
     const val PREF_SELECTED_SUBTYPE = ""
     const val PREF_URL_DETECTION = false
     const val PREF_DONT_SHOW_MISSING_DICTIONARY_DIALOG = false
-    const val PREF_TOOLBAR_MODE = "EXPANDABLE"
+    // Elderly-phone shipped default: SUGGESTION_STRIP (not EXPANDABLE) - SuggestionStripView
+    // hides the expand arrow and drops its click listener whenever the mode isn't EXPANDABLE
+    // (see updateKeys()), so there's nothing to expand into. Voice lives inline instead, via
+    // PREF_PINNED_TOOLBAR_KEYS below - same row as the word suggestions, always visible.
+    const val PREF_TOOLBAR_MODE = "SUGGESTION_STRIP"
     const val PREF_TOOLBAR_HIDING_GLOBAL = true
     const val PREF_TOOLBAR_SWIPE_DOWN_TO_HIDE = false
     const val PREF_QUICK_PIN_TOOLBAR_KEYS = false
-    val PREF_PINNED_TOOLBAR_KEYS = defaultPinnedToolbarPref
+    val PREF_PINNED_TOOLBAR_KEYS = defaultElderPinnedToolbarPref
     val PREF_TOOLBAR_KEYS = defaultToolbarPref
     const val PREF_AUTO_SHOW_TOOLBAR = false
     const val PREF_AUTO_HIDE_TOOLBAR = false
