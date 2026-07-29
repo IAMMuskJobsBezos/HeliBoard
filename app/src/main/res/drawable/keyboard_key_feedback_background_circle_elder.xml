@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Elderly-phone shipped default: a round key-preview bubble instead of the thin rectangle, sized
+     to comfortably frame one enlarged character. Padding is close to symmetric (not a tall
+     bottom-heavy box) so the shape keeps its circular proportions instead of stretching into a
+     skinny column; keyPreviewOffset (see config_key_preview_offset_elder) lifts the whole bubble
+     clear of the key so the pressed key stays visible underneath. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#F6F8FA" />
+    <size
+        android:width="64dp"
+        android:height="56dp" />
+    <padding
+        android:left="19dp"
+        android:top="9dp"
+        android:right="19dp"
+        android:bottom="9dp" />
+</shape>

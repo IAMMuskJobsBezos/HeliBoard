@@ -24,9 +24,11 @@ import android.view.View.OnLongClickListener
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityEvent
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.core.graphics.toColorInt
 import androidx.core.view.doOnNextLayout
 import androidx.core.view.isVisible
 import helium314.keyboard.event.HapticEvent
@@ -52,6 +54,7 @@ import helium314.keyboard.latin.utils.createToolbarKey
 import helium314.keyboard.latin.utils.dpToPx
 import helium314.keyboard.latin.utils.getEnabledToolbarKeys
 import helium314.keyboard.latin.utils.getPinnedToolbarKeys
+import helium314.keyboard.latin.utils.getStringResourceOrName
 import helium314.keyboard.latin.utils.prefs
 import helium314.keyboard.latin.utils.removeFirst
 import helium314.keyboard.latin.utils.removePinnedKey
@@ -162,10 +165,15 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
             toolbar.addView(button)
         }
         for (pinnedKey in getPinnedToolbarKeys(context.prefs())) {
-            val button = createToolbarKey(context, pinnedKey)
-            button.layoutParams = toolbarKeyLayoutParams
-            setupKey(button, colors)
-            pinnedKeys.addView(button)
+            if (pinnedKey == ToolbarKey.VOICE) {
+                val pill = createVoicePillKey(context, colors)
+                pinnedKeys.addView(pill)
+            } else {
+                val button = createToolbarKey(context, pinnedKey)
+                button.layoutParams = toolbarKeyLayoutParams
+                setupKey(button, colors)
+                pinnedKeys.addView(button)
+            }
             val pinnedKeyInToolbar = toolbar.findViewWithTag<View>(pinnedKey)
             if (pinnedKeyInToolbar != null && Settings.getValues().mQuickPinToolbarKeys)
                 pinnedKeyInToolbar.background = enabledToolKeyBackground
@@ -550,6 +558,60 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         (view.layoutParams as LinearLayout.LayoutParams).weight = 1f
         colors.setColor(view, ColorType.TOOL_BAR_KEY)
         colors.setBackground(view, ColorType.STRIP_BACKGROUND)
+    }
+
+    // Elderly-phone shipped default: the pinned voice key is styled as an outlined pill with a
+    // mic icon and a "Voice" text label, matching the "Voice to text" / "Voice" buttons used
+    // elsewhere in the app suite (Messages/Notes), instead of a bare icon glyph like the other
+    // toolbar keys. It still dispatches through the normal ToolbarKey.VOICE click/long-click path
+    // (tag-based, see onClick/onLongClick) - only the visual is different. Not wired to an actual
+    // voice-input engine yet; that is a separate, not-yet-built phase.
+    private fun createVoicePillKey(context: Context, colors: Colors): View {
+        val accent = colors.get(ColorType.ACTION_KEY_BACKGROUND)
+        val navy = "#0B1B41".toColorInt()
+        val strokeWidthPx = 2.dpToPx(resources)
+        val cornerRadiusPx = 999.dpToPx(resources).toFloat()
+        val horizontalPaddingPx = 14.dpToPx(resources)
+        val iconTextGapPx = 6.dpToPx(resources)
+        val iconSizePx = 22.dpToPx(resources)
+
+        val pillBackground = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = cornerRadiusPx
+            setColor(colors.get(ColorType.KEY_BACKGROUND))
+            setStroke(strokeWidthPx, accent)
+        }
+
+        val icon = ImageView(context).apply {
+            setImageDrawable(KeyboardIconsSet.instance.getNewDrawable(ToolbarKey.VOICE.name, context))
+            setColorFilter(navy)
+            layoutParams = LinearLayout.LayoutParams(iconSizePx, iconSizePx)
+        }
+        val label = TextView(context, null, R.attr.suggestionWordStyle).apply {
+            text = "Voice" // matches the "Voice to text" / "Voice" pill used elsewhere in the app suite
+            setTextColor(navy)
+            setSingleLine(true)
+        }
+
+        val pill = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER
+            tag = ToolbarKey.VOICE
+            contentDescription = ToolbarKey.VOICE.name.lowercase().getStringResourceOrName("", context)
+            background = pillBackground
+            setPadding(horizontalPaddingPx, 0, horizontalPaddingPx, 0)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT).apply {
+                val vMargin = 6.dpToPx(resources)
+                setMargins(4.dpToPx(resources), vMargin, 4.dpToPx(resources), vMargin)
+            }
+            addView(icon)
+            addView(label, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                marginStart = iconTextGapPx
+            })
+            setOnClickListener(this@SuggestionStripView)
+            setOnLongClickListener(this@SuggestionStripView)
+        }
+        return pill
     }
 
     companion object {

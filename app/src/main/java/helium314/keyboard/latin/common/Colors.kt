@@ -64,6 +64,8 @@ interface Colors {
             KEY_BACKGROUND, MORE_SUGGESTIONS_WORD_BACKGROUND, ACTION_KEY_POPUP_KEYS_BACKGROUND, POPUP_KEYS_BACKGROUND ->
                 attr.getDrawable(R.styleable.KeyboardView_keyBackground)
             FUNCTIONAL_KEY_BACKGROUND -> attr.getDrawable(R.styleable.KeyboardView_functionalKeyBackground)
+            SYMBOL_KEY_BACKGROUND -> attr.getDrawable(R.styleable.KeyboardView_symbolKeyBackground)
+                ?: attr.getDrawable(R.styleable.KeyboardView_functionalKeyBackground)
             SPACE_BAR_BACKGROUND -> {
                 if (hasKeyBorders) attr.getDrawable(R.styleable.KeyboardView_spacebarBackground)
                 else attr.getDrawable(R.styleable.KeyboardView_spacebarNoBorderBackground)
@@ -282,7 +284,7 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
             EMOJI_SEARCH_TEXT, CLIPBOARD_SUGGESTION_ICON -> keyText
         KEY_HINT_TEXT -> keyHintText
         SPACE_BAR_TEXT -> spaceBarText
-        FUNCTIONAL_KEY_BACKGROUND, EMOJI_SEARCH_BACKGROUND -> if (!isNight) functionalKey else doubleAdjustedKeyBackground
+        FUNCTIONAL_KEY_BACKGROUND, EMOJI_SEARCH_BACKGROUND, SYMBOL_KEY_BACKGROUND -> if (!isNight) functionalKey else doubleAdjustedKeyBackground
         SPACE_BAR_BACKGROUND -> spaceBar
         MORE_SUGGESTIONS_WORD_BACKGROUND, MAIN_BACKGROUND -> background
         KEY_BACKGROUND -> keyBackground
@@ -299,6 +301,7 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
             MORE_SUGGESTIONS_WORD_BACKGROUND -> backgroundStateList
             KEY_BACKGROUND -> keyStateList
             FUNCTIONAL_KEY_BACKGROUND -> functionalKeyStateList
+            SYMBOL_KEY_BACKGROUND -> functionalKeyStateList
             ACTION_KEY_BACKGROUND -> actionKeyStateList
             SPACE_BAR_BACKGROUND -> spaceBarStateList
             POPUP_KEYS_BACKGROUND -> adjustedBackgroundStateList
@@ -338,7 +341,7 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
             view.setBackgroundColor(Color.WHITE) // set white to make the color filters work
         when (color) {
             KEY_PREVIEW_BACKGROUND -> view.background.colorFilter = adjustedBackgroundFilter
-            FUNCTIONAL_KEY_BACKGROUND, KEY_BACKGROUND, MORE_SUGGESTIONS_WORD_BACKGROUND, SPACE_BAR_BACKGROUND, STRIP_BACKGROUND, CLIPBOARD_SUGGESTION_BACKGROUND -> setColor(view.background, color)
+            FUNCTIONAL_KEY_BACKGROUND, KEY_BACKGROUND, MORE_SUGGESTIONS_WORD_BACKGROUND, SPACE_BAR_BACKGROUND, STRIP_BACKGROUND, CLIPBOARD_SUGGESTION_BACKGROUND, SYMBOL_KEY_BACKGROUND -> setColor(view.background, color)
             ONE_HANDED_MODE_BUTTON -> setColor(view.background, if (keyboardBackground == null) MAIN_BACKGROUND else STRIP_BACKGROUND)
             MORE_SUGGESTIONS_BACKGROUND -> view.background.colorFilter = backgroundFilter
             POPUP_KEYS_BACKGROUND ->
@@ -375,6 +378,15 @@ class DefaultColors (
     private val spaceBarText: Int = keyHintText,
     private val gesture: Int = accent,
     private var keyboardBackground: Drawable? = null,
+    /** fill for the symbol/alphabet switch key ("?123" / "ABC"); defaults to the other functional keys */
+    private val symbolKey: Int = functionalKey,
+    /** overrides the white action key icon; null keeps the automatic white/gray choice */
+    private val actionKeyIcon: Int? = null,
+    /** overrides the pressed-state fill for normal (letter/number) keys; null keeps the
+     *  automatic brightenOrDarken(keyBackground) choice, which is barely visible on white keys */
+    private val keyPressed: Int? = null,
+    /** overrides the key preview popup's fill; null keeps the automatic adjustedBackground choice */
+    private val keyPreviewBackground: Int? = null,
 ) : Colors {
     private val navBar: Int
     /** brightened or darkened variant of [background], to be used if exact background color would be
@@ -386,6 +398,7 @@ class DefaultColors (
 
     private val backgroundFilter = colorFilter(background)
     private val adjustedBackgroundFilter: ColorFilter
+    private val keyPreviewBackgroundFilter: ColorFilter by lazy { colorFilter(keyPreviewBackground ?: adjustedBackground) }
     private val keyTextFilter: ColorFilter
     private val suggestionTextFilter = colorFilter(suggestionText)
     private val accentColorFilter = colorFilter(accent)
@@ -396,6 +409,7 @@ class DefaultColors (
     private val backgroundStateList: ColorStateList
     private val keyStateList: ColorStateList
     private val functionalKeyStateList: ColorStateList
+    private val symbolKeyStateList: ColorStateList
     private val actionKeyStateList: ColorStateList
     private val spaceBarStateList: ColorStateList
     private val adjustedBackgroundStateList: ColorStateList
@@ -445,8 +459,9 @@ class DefaultColors (
         if (hasKeyBorders) {
             backgroundStateList = pressedStateList(brightenOrDarken(background, true), background)
             keyStateList = if (themeStyle == STYLE_HOLO) pressedStateList(keyBackground, keyBackground)
-                else pressedStateList(brightenOrDarken(keyBackground, true), keyBackground)
+                else pressedStateList(keyPressed ?: brightenOrDarken(keyBackground, true), keyBackground)
             functionalKeyStateList = pressedStateList(brightenOrDarken(functionalKey, true), functionalKey)
+            symbolKeyStateList = pressedStateList(brightenOrDarken(symbolKey, true), symbolKey)
             actionKeyStateList = if (themeStyle == STYLE_HOLO) functionalKeyStateList
                 else pressedStateList(brightenOrDarken(accent, true), accent)
             spaceBarStateList = if (themeStyle == STYLE_HOLO) pressedStateList(spaceBar, spaceBar)
@@ -456,12 +471,14 @@ class DefaultColors (
             backgroundStateList = pressedStateList(brightenOrDarken(background, true), background)
             keyStateList = pressedStateList(keyBackground, Color.TRANSPARENT)
             functionalKeyStateList = keyStateList
+            symbolKeyStateList = keyStateList
             actionKeyStateList = if (themeStyle == STYLE_HOLO) functionalKeyStateList
                 else pressedStateList(brightenOrDarken(accent, true), accent)
             spaceBarStateList = pressedStateList(brightenOrDarken(spaceBar, true), spaceBar)
         }
         keyTextFilter = colorFilter(keyText)
         actionKeyIconColorFilter = when {
+            actionKeyIcon != null -> colorFilter(actionKeyIcon)
             themeStyle == STYLE_HOLO -> keyTextFilter
             // the white icon may not have enough contrast, and can't be adjusted by the user
             isBrightColor(accent) -> colorFilter(Color.DKGRAY)
@@ -473,7 +490,8 @@ class DefaultColors (
         TOOL_BAR_KEY_ENABLED_BACKGROUND, EMOJI_CATEGORY_SELECTED, ACTION_KEY_BACKGROUND,
             CLIPBOARD_PIN, SHIFT_KEY_ICON -> accent
         AUTOFILL_BACKGROUND_CHIP -> if (themeStyle == STYLE_MATERIAL && !hasKeyBorders) background else adjustedBackground
-        GESTURE_PREVIEW, POPUP_KEYS_BACKGROUND, MORE_SUGGESTIONS_BACKGROUND, KEY_PREVIEW_BACKGROUND -> adjustedBackground
+        GESTURE_PREVIEW, POPUP_KEYS_BACKGROUND, MORE_SUGGESTIONS_BACKGROUND -> adjustedBackground
+        KEY_PREVIEW_BACKGROUND -> keyPreviewBackground ?: adjustedBackground
         TOOL_BAR_EXPAND_KEY_BACKGROUND, CLIPBOARD_SUGGESTION_BACKGROUND -> doubleAdjustedBackground
         GESTURE_TRAIL -> gesture
         KEY_TEXT, REMOVE_SUGGESTION_ICON, FUNCTIONAL_KEY_TEXT, KEY_ICON, EMOJI_KEY_TEXT,
@@ -481,6 +499,7 @@ class DefaultColors (
         KEY_HINT_TEXT -> keyHintText
         SPACE_BAR_TEXT -> spaceBarText
         FUNCTIONAL_KEY_BACKGROUND, EMOJI_SEARCH_BACKGROUND -> functionalKey
+        SYMBOL_KEY_BACKGROUND -> symbolKey
         SPACE_BAR_BACKGROUND -> spaceBar
         MORE_SUGGESTIONS_WORD_BACKGROUND, MAIN_BACKGROUND -> background
         KEY_BACKGROUND -> keyBackground
@@ -489,7 +508,7 @@ class DefaultColors (
         NAVIGATION_BAR -> navBar
         SUGGESTION_AUTO_CORRECT, EMOJI_CATEGORY, TOOL_BAR_KEY, TOOL_BAR_EXPAND_KEY, ONE_HANDED_MODE_BUTTON -> suggestionText
         MORE_SUGGESTIONS_HINT, SUGGESTED_WORD, SUGGESTION_TYPED_WORD, SUGGESTION_VALID_WORD -> adjustedSuggestionText
-        ACTION_KEY_ICON -> Color.WHITE
+        ACTION_KEY_ICON -> actionKeyIcon ?: Color.WHITE
     }
 
     override fun setColor(drawable: Drawable, color: ColorType) {
@@ -497,6 +516,7 @@ class DefaultColors (
             MORE_SUGGESTIONS_WORD_BACKGROUND -> backgroundStateList
             KEY_BACKGROUND -> keyStateList
             FUNCTIONAL_KEY_BACKGROUND -> functionalKeyStateList
+            SYMBOL_KEY_BACKGROUND -> symbolKeyStateList
             ACTION_KEY_BACKGROUND -> actionKeyStateList
             SPACE_BAR_BACKGROUND -> spaceBarStateList
             POPUP_KEYS_BACKGROUND -> adjustedBackgroundStateList
@@ -526,8 +546,9 @@ class DefaultColors (
         if (view.background == null)
             view.setBackgroundColor(Color.WHITE) // set white to make the color filters work
         when (color) {
-            KEY_PREVIEW_BACKGROUND, POPUP_KEYS_BACKGROUND -> view.background.colorFilter = adjustedBackgroundFilter
-            FUNCTIONAL_KEY_BACKGROUND, KEY_BACKGROUND, MORE_SUGGESTIONS_WORD_BACKGROUND, SPACE_BAR_BACKGROUND, STRIP_BACKGROUND, CLIPBOARD_SUGGESTION_BACKGROUND -> setColor(view.background, color)
+            KEY_PREVIEW_BACKGROUND -> view.background.colorFilter = keyPreviewBackgroundFilter
+            POPUP_KEYS_BACKGROUND -> view.background.colorFilter = adjustedBackgroundFilter
+            FUNCTIONAL_KEY_BACKGROUND, KEY_BACKGROUND, MORE_SUGGESTIONS_WORD_BACKGROUND, SPACE_BAR_BACKGROUND, STRIP_BACKGROUND, CLIPBOARD_SUGGESTION_BACKGROUND, SYMBOL_KEY_BACKGROUND -> setColor(view.background, color)
             ONE_HANDED_MODE_BUTTON -> setColor(view.background, if (keyboardBackground == null) MAIN_BACKGROUND else STRIP_BACKGROUND)
             MORE_SUGGESTIONS_BACKGROUND -> view.background.colorFilter = backgroundFilter
             MAIN_BACKGROUND -> {
@@ -549,7 +570,7 @@ class DefaultColors (
         EMOJI_CATEGORY_SELECTED, CLIPBOARD_PIN, SHIFT_KEY_ICON -> accentColorFilter
         KEY_TEXT, KEY_ICON -> keyTextFilter
         REMOVE_SUGGESTION_ICON, EMOJI_CATEGORY, ONE_HANDED_MODE_BUTTON, TOOL_BAR_KEY, TOOL_BAR_EXPAND_KEY -> suggestionTextFilter
-        KEY_PREVIEW_BACKGROUND -> adjustedBackgroundFilter
+        KEY_PREVIEW_BACKGROUND -> keyPreviewBackgroundFilter
         ACTION_KEY_ICON -> actionKeyIconColorFilter
         else -> colorFilter(get(color)) // create color filter (not great for performance, so the frequently used filters should be stored)
     }
@@ -627,6 +648,7 @@ enum class ColorType {
     EMOJI_SEARCH_BACKGROUND,
     FUNCTIONAL_KEY_TEXT,
     FUNCTIONAL_KEY_BACKGROUND,
+    SYMBOL_KEY_BACKGROUND,
     GESTURE_TRAIL,
     GESTURE_PREVIEW,
     KEY_BACKGROUND,

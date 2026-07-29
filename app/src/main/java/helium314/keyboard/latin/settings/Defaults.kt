@@ -12,7 +12,7 @@ import helium314.keyboard.latin.BuildConfig
 import helium314.keyboard.latin.common.Constants.Separators
 import helium314.keyboard.latin.common.Constants.Subtype.ExtraValue
 import helium314.keyboard.latin.utils.LayoutType
-import helium314.keyboard.latin.utils.POPUP_KEYS_LABEL_DEFAULT
+import helium314.keyboard.latin.utils.POPUP_KEYS_LABEL_ELDER_DEFAULT
 import helium314.keyboard.latin.utils.POPUP_KEYS_ORDER_DEFAULT
 import helium314.keyboard.latin.utils.defaultClipboardToolbarPref
 import helium314.keyboard.latin.utils.defaultElderPinnedToolbarPref
@@ -75,7 +75,7 @@ object Defaults {
     const val PREF_KEY_USE_PERSONALIZED_DICTS = true
     const val PREF_KEY_USE_DOUBLE_SPACE_PERIOD = true
     const val PREF_BLOCK_POTENTIALLY_OFFENSIVE = true
-    const val PREF_SHOW_LANGUAGE_SWITCH_KEY = false
+    const val PREF_SHOW_LANGUAGE_SWITCH_KEY = true
     const val PREF_LANGUAGE_SWITCH_KEY = "internal"
     const val PREF_SHOW_EMOJI_KEY = false
     const val PREF_VARIABLE_TOOLBAR_DIRECTION = true
@@ -86,11 +86,15 @@ object Defaults {
     @JvmField
     val PREF_SPLIT_SPACER_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
     // Elderly-phone shipped defaults: bigger keys and labels than stock (see plan Phase 2).
-    private const val ELDER_KEY_SCALE = 1.18f
-    private const val ELDER_BOTTOM_ROW_SCALE = 1.12f
+    // ELDER_KEY_SCALE: a full match to the reference screenshot's key height would be ~0.99
+    // (-20% from the original 1.18 elder scale); the user asked to shrink by only ~10% instead,
+    // trading exact pixel match for keys that stay comfortably large. Do not "fix" this to 0.99.
+    private const val ELDER_KEY_SCALE = 1.06f
+    private const val ELDER_BOTTOM_ROW_SCALE = 1.0f // reference bottom row is the same height as the others
     private const val ELDER_BOTTOM_PADDING_SCALE = 1.4f
     private const val ELDER_FONT_SCALE = 1.18f
     private const val ELDER_HINT_FONT_SCALE = 1.1f
+    private const val ELDER_KEY_GAP_SCALE = 1.15f // ~12px -> ~14px horizontal gap, matching the reference
     @JvmField
     val PREF_KEYBOARD_HEIGHT_SCALE = Array(4) { ELDER_KEY_SCALE }
     @JvmField
@@ -103,7 +107,7 @@ object Defaults {
     @JvmField
     val PREF_SIDE_PADDING_SCALE = Array(8) { 0f }
     @JvmField
-    val PREF_KEY_GAP_SCALE = Array(4) { DEFAULT_SIZE_SCALE }
+    val PREF_KEY_GAP_SCALE = Array(4) { ELDER_KEY_GAP_SCALE }
     const val PREF_FONT_SCALE = ELDER_FONT_SCALE
     const val PREF_HINT_FONT_SCALE = ELDER_HINT_FONT_SCALE
     const val PREF_EMOJI_FONT_SCALE = DEFAULT_SIZE_SCALE
@@ -151,7 +155,7 @@ object Defaults {
     const val PREF_CUSTOM_CURRENCY_KEY = ""
     const val PREF_SHOW_HINTS = true
     const val PREF_POPUP_KEYS_ORDER = POPUP_KEYS_ORDER_DEFAULT
-    const val PREF_POPUP_KEYS_HINT_ORDER = POPUP_KEYS_LABEL_DEFAULT
+    const val PREF_POPUP_KEYS_HINT_ORDER = POPUP_KEYS_LABEL_ELDER_DEFAULT
     const val PREF_SHOW_POPUP_HINTS = false
     const val PREF_SHOW_TLD_POPUP_KEYS = true
     const val PREF_MORE_POPUP_KEYS = "main"

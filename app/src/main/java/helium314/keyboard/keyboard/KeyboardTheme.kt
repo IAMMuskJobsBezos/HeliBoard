@@ -23,7 +23,6 @@ import helium314.keyboard.latin.common.DynamicColors
 import helium314.keyboard.latin.settings.Defaults
 import helium314.keyboard.latin.settings.Settings
 import helium314.keyboard.latin.utils.ResourceUtils
-import androidx.core.graphics.ColorUtils
 import helium314.keyboard.latin.utils.brightenOrDarken
 import helium314.keyboard.latin.utils.isBrightColor
 import helium314.keyboard.latin.utils.isGoodContrast
@@ -196,35 +195,39 @@ private constructor(val themeId: Int, @JvmField val mStyleId: Int) {
                 // screenshot with the two keys circled before this is attempted again. Do not
                 // guess again - wait for that screenshot.
                 //
-                // Elderly-phone shipped default: light rounded/bordered keys matched pixel-for-
-                // pixel against a reference screenshot (background/key/space fills sampled
-                // directly from it). Enter/shift/backspace/?123 all key off ELDER_LAVENDER - the
-                // same lavender the voice/mic key is outlined in - so every special key is
-                // provably one hue: Enter is the base shade at full saturation (white icon on it
-                // is ~8:1 contrast), shift/backspace/?123 are that same hue with saturation
-                // pulled back and lightness raised (muted/pale, not just a darker tint of the
-                // same intensity), and both tiers darken further on press through the existing
-                // brightenOrDarken() state-list logic.
-                THEME_ELDER -> {
-                    val elderLavender = "#5E35B1".toColorInt() // accent -> Enter key + voice/mic key
-                    val hsl = floatArrayOf(0f, 0f, 0f)
-                    ColorUtils.colorToHSL(elderLavender, hsl)
-                    hsl[1] = (hsl[1] - 0.20f).coerceAtLeast(0f) // less saturated
-                    hsl[2] = (hsl[2] + 0.40f).coerceAtMost(0.95f) // lighter, not as dark
-                    val elderLavenderMuted = ColorUtils.HSLToColor(hsl)
-                    DefaultColors(
-                        themeStyle,
-                        hasBorders,
-                        elderLavender,
-                        "#E9EAED".toColorInt(), // background behind/between keys
-                        "#FFFFFF".toColorInt(), // letter/number key fill
-                        elderLavenderMuted, // shift/backspace/?123 fill: same hue, muted + lightened
-                        "#FFFFFF".toColorInt(), // space bar fill
-                        "#3C4043".toColorInt(), // key text
-                        "#9AA0A6".toColorInt(), // hint text (top-corner numbers)
-                        keyboardBackground = backgroundImage
-                    )
-                }
+                // Elderly-phone shipped default: colors below were sampled pixel-by-pixel from a
+                // reference screenshot (Screenshot 2026-07-28 at 12.03.46.png), not derived. The
+                // one deliberate deviation from that reference is the background, which stays the
+                // pre-existing light gray (#E9EAED) instead of the reference's pale pink-lavender
+                // (#F0EDF3), per explicit user instruction. Enter is a periwinkle pill with a dark
+                // navy icon (white would fail contrast on this light a fill - see actionKeyIcon
+                // below); shift/backspace/comma/period/?123 all share one pale lavender fill - an
+                // earlier revision gave ?123 its own grayer shade, but the user asked for it to
+                // match the others exactly, so symbolKey is left at its functionalKey default.
+                // All still darken on press via the existing brightenOrDarken() state-list logic.
+                THEME_ELDER -> DefaultColors(
+                    themeStyle,
+                    hasBorders,
+                    accent = "#B2C5FB".toColorInt(), // Enter key fill
+                    background = "#E9EAED".toColorInt(), // background behind/between keys (kept, not matched to reference)
+                    keyBackground = "#FFFFFF".toColorInt(), // letter/number key fill
+                    functionalKey = "#DEE2F9".toColorInt(), // shift/backspace/comma/period/?123 fill
+                    spaceBar = "#FFFFFF".toColorInt(), // space bar fill
+                    keyText = "#1B1B1F".toColorInt(), // key text
+                    keyHintText = "#4A4D52".toColorInt(), // hint text (top-corner numbers)
+                    suggestionText = "#1B1B1F".toColorInt(),
+                    spaceBarText = "#1B1B1F".toColorInt(),
+                    keyboardBackground = backgroundImage,
+                    actionKeyIcon = "#0B1B41".toColorInt(), // dark navy Enter arrow; white fails contrast on the periwinkle fill
+                    // a plain white-on-white pressed state (the default brightenOrDarken(white)
+                    // delta is only ~6% lighter/darker) is too subtle to see reliably. Muted gray
+                    // (not the functional lavender) so the pressed key reads as "faded toward the
+                    // background", not as if it switched roles to a functional key.
+                    keyPressed = "#D8D9DC".toColorInt(),
+                    // key preview popup fill: same lavender as the functional keys (not the
+                    // near-white default), per the user's explicit request.
+                    keyPreviewBackground = "#DEE2F9".toColorInt(),
+                )
                 THEME_HOLO_WHITE -> DefaultColors(
                     themeStyle,
                     hasBorders,

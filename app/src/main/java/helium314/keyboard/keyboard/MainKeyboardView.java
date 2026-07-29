@@ -375,8 +375,9 @@ public final class MainKeyboardView extends KeyboardView implements DrawingProxy
     private void showKeyPreview(@NonNull final Key key) {
         locatePreviewPlacerView();
         getLocationInWindow(mOriginCoords);
+        final boolean isCapsLock = getKeyboard().mId.getElement() == KeyboardElement.ALPHABET_SHIFT_LOCKED;
         mKeyPreviewChoreographer.placeAndShowKeyPreview(key, getKeyboard().mIconsSet, getKeyDrawParams(),
-                KeyboardSwitcher.getInstance().getWrapperView().getWidth(), mOriginCoords, mDrawingPreviewPlacerView);
+                KeyboardSwitcher.getInstance().getWrapperView().getWidth(), mOriginCoords, mDrawingPreviewPlacerView, isCapsLock);
     }
 
     private void dismissKeyPreviewWithoutDelay(@NonNull final Key key) {

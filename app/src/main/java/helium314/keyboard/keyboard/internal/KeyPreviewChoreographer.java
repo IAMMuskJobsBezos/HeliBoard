@@ -76,15 +76,15 @@ public final class KeyPreviewChoreographer {
 
     public void placeAndShowKeyPreview(final Key key, final KeyboardIconsSet iconsSet,
             final KeyDrawParams drawParams, final int fullKeyboardViewWidth, final int[] keyboardOrigin,
-            final ViewGroup placerView) {
+            final ViewGroup placerView, final boolean isCapsLock) {
         final KeyPreviewView keyPreviewView = getKeyPreviewView(key, placerView);
-        placeKeyPreview(key, keyPreviewView, iconsSet, drawParams, fullKeyboardViewWidth, keyboardOrigin);
+        placeKeyPreview(key, keyPreviewView, iconsSet, drawParams, fullKeyboardViewWidth, keyboardOrigin, isCapsLock);
         showKeyPreview(key, keyPreviewView);
     }
 
     private void placeKeyPreview(Key key, KeyPreviewView keyPreviewView, KeyboardIconsSet iconsSet,
-            KeyDrawParams drawParams, int fullKeyboardViewWidth, int[] originCoords) {
-        keyPreviewView.setPreviewVisual(key, iconsSet, drawParams);
+            KeyDrawParams drawParams, int fullKeyboardViewWidth, int[] originCoords, boolean isCapsLock) {
+        keyPreviewView.setPreviewVisual(key, iconsSet, drawParams, isCapsLock);
         keyPreviewView.measure(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         mParams.setGeometry(keyPreviewView);
         int previewWidth = keyPreviewView.getMeasuredWidth();

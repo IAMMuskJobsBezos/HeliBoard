@@ -27,7 +27,8 @@
         parent="KeyboardView.Rounded_Base">
         <item name="android:background">@drawable/keyboard_background_lxx_base_border</item>
         <item name="keyBackground">@drawable/btn_keyboard_key_rounded_base_border</item>
-        <item name="functionalKeyBackground">@drawable/btn_keyboard_key_functional_rounded_base_border</item>
+        <item name="functionalKeyBackground">@drawable/btn_keyboard_key_functional_rect_rounded_base_border</item>
+        <item name="symbolKeyBackground">@drawable/btn_keyboard_key_functional_rounded_base_border</item>
         <item name="spacebarBackground">@drawable/btn_keyboard_key_rounded_base_border</item>
     </style>
 
@@ -36,9 +37,11 @@
         parent="MainKeyboardView.Rounded_Base">
         <item name="android:background">@drawable/keyboard_background_lxx_base_border</item>
         <item name="keyBackground">@drawable/btn_keyboard_key_rounded_base_border</item>
-        <item name="functionalKeyBackground">@drawable/btn_keyboard_key_functional_rounded_base_border</item>
+        <item name="functionalKeyBackground">@drawable/btn_keyboard_key_functional_rect_rounded_base_border</item>
+        <item name="symbolKeyBackground">@drawable/btn_keyboard_key_functional_rounded_base_border</item>
         <item name="spacebarBackground">@drawable/btn_keyboard_key_rounded_base_border</item>
-        <item name="keyTypeface">bold</item>
+        <item name="keyPreviewBackground">@drawable/keyboard_key_feedback_background_circle_elder</item>
+        <item name="keyPreviewOffset">@dimen/config_key_preview_offset_elder</item>
     </style>
 
     <style
@@ -47,7 +50,7 @@
         <item name="categoryPageIndicatorBackground">@color/emoji_tab_page_indicator_background_lxx_base_border</item>
         <item name="android:background">@drawable/keyboard_background_lxx_base_border</item>
         <item name="keyBackground">@drawable/btn_keyboard_key_rounded_base_border</item>
-        <item name="functionalKeyBackground">@drawable/btn_keyboard_key_functional_rounded_base_border</item>
+        <item name="functionalKeyBackground">@drawable/btn_keyboard_key_functional_rect_rounded_base_border</item>
         <item name="spacebarBackground">@drawable/btn_keyboard_key_rounded_base_border</item>
     </style>
 
@@ -56,7 +59,7 @@
         parent="ClipboardHistoryView.Rounded_Base">
         <item name="android:background">@drawable/keyboard_background_lxx_base_border</item>
         <item name="keyBackground">@drawable/btn_keyboard_key_rounded_base_border</item>
-        <item name="functionalKeyBackground">@drawable/btn_keyboard_key_functional_rounded_base_border</item>
+        <item name="functionalKeyBackground">@drawable/btn_keyboard_key_functional_rect_rounded_base_border</item>
     </style>
 
     <style

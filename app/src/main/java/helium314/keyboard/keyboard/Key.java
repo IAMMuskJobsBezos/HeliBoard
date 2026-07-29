@@ -138,6 +138,7 @@ public class Key implements Comparable<Key> {
     public static final int BACKGROUND_TYPE_FUNCTIONAL = 2;
     public static final int BACKGROUND_TYPE_ACTION = 3;
     public static final int BACKGROUND_TYPE_SPACEBAR = 4;
+    public static final int BACKGROUND_TYPE_SYMBOL = 5;
 
     private final int mActionFlags;
     private static final int ACTION_FLAGS_IS_REPEATABLE = 0x01;
@@ -470,6 +471,7 @@ public class Key implements Comparable<Key> {
             case BACKGROUND_TYPE_FUNCTIONAL -> "functional";
             case BACKGROUND_TYPE_ACTION -> "action";
             case BACKGROUND_TYPE_SPACEBAR -> "spacebar";
+            case BACKGROUND_TYPE_SYMBOL -> "symbol";
             default -> null;
         };
     }
@@ -916,6 +918,8 @@ public class Key implements Comparable<Key> {
             new KeyBackgroundState(android.R.attr.state_active),
             // 4: BACKGROUND_TYPE_SPACEBAR
             new KeyBackgroundState(),
+            // 5: BACKGROUND_TYPE_SYMBOL
+            new KeyBackgroundState(),
         };
     }
 
@@ -928,10 +932,13 @@ public class Key implements Comparable<Key> {
     public final Drawable selectBackgroundDrawable(@NonNull final Drawable keyBackground,
             @NonNull final Drawable functionalKeyBackground,
             @NonNull final Drawable spacebarBackground,
-            @NonNull final Drawable actionKeyBackground) {
+            @NonNull final Drawable actionKeyBackground,
+            @NonNull final Drawable symbolKeyBackground) {
         final Drawable background;
         if (hasActionKeyBackground()) {
             background = actionKeyBackground;
+        } else if (hasSymbolBackground()) {
+            background = symbolKeyBackground;
         } else if (hasFunctionalBackground()) {
             background = functionalKeyBackground;
         } else if (mBackgroundType == BACKGROUND_TYPE_SPACEBAR) {
@@ -952,6 +959,10 @@ public class Key implements Comparable<Key> {
 
     public boolean hasFunctionalBackground() {
         return mBackgroundType == BACKGROUND_TYPE_FUNCTIONAL;
+    }
+
+    public boolean hasSymbolBackground() {
+        return mBackgroundType == BACKGROUND_TYPE_SYMBOL;
     }
 
     @Nullable private static String getDisabledIconName(@NonNull final String iconName) {

@@ -17,6 +17,13 @@ private const val POPUP_KEYS_LANGUAGE = "language"
 const val POPUP_KEYS_LABEL_DEFAULT = POPUP_KEYS_NUMBER + Separators.KV + true + Separators.ENTRY + POPUP_KEYS_LANGUAGE_PRIORITY +
         Separators.KV + false + Separators.ENTRY + POPUP_KEYS_LAYOUT + Separators.KV + true + Separators.ENTRY +
         POPUP_KEYS_SYMBOLS + Separators.KV + true + Separators.ENTRY + POPUP_KEYS_LANGUAGE + Separators.KV + false
+// Elderly-phone shipped default: only digit hints on row 1, matching the reference screenshot -
+// the per-key "symbol" hints (@ # $ etc, from addSymbolPopupKeys()) on rows 2-3 are disabled so
+// those rows stay visually clean. `layout` stays enabled: it's what surfaces the comma key's own
+// manually-assigned popup list (see getCommaPopupKeys()) as its hint icon, e.g. the emoji glyph.
+const val POPUP_KEYS_LABEL_ELDER_DEFAULT = POPUP_KEYS_NUMBER + Separators.KV + true + Separators.ENTRY + POPUP_KEYS_LANGUAGE_PRIORITY +
+        Separators.KV + false + Separators.ENTRY + POPUP_KEYS_LAYOUT + Separators.KV + true + Separators.ENTRY +
+        POPUP_KEYS_SYMBOLS + Separators.KV + false + Separators.ENTRY + POPUP_KEYS_LANGUAGE + Separators.KV + false
 const val POPUP_KEYS_ORDER_DEFAULT = POPUP_KEYS_LANGUAGE_PRIORITY + Separators.KV + true + Separators.ENTRY + POPUP_KEYS_NUMBER +
         Separators.KV + true + Separators.ENTRY + POPUP_KEYS_SYMBOLS + Separators.KV + true + Separators.ENTRY +
         POPUP_KEYS_LAYOUT + Separators.KV + true + Separators.ENTRY + POPUP_KEYS_LANGUAGE + Separators.KV + true

@@ -7,6 +7,7 @@
 package helium314.keyboard.keyboard.internal;
 
 import android.content.Context;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
@@ -43,21 +44,33 @@ public class KeyPreviewView extends TextView {
         setGravity(Gravity.CENTER);
     }
 
-    public void setPreviewVisual(final Key key, final KeyboardIconsSet iconsSet, final KeyDrawParams drawParams) {
+    public void setPreviewVisual(final Key key, final KeyboardIconsSet iconsSet, final KeyDrawParams drawParams,
+            final boolean isCapsLock) {
         // What we show as preview should match what we show on a key top in onDraw().
         if (key.getIconName() != null) {
             setCompoundDrawables(key.getPreviewIcon(iconsSet), null, null, null);
             setText(null);
+            setPaintFlags(getPaintFlags() & ~Paint.UNDERLINE_TEXT_FLAG); // view is pooled/reused, clear stale state
             return;
         }
 
         setCompoundDrawables(null, null, null, null);
         setTextColor(drawParams.mPreviewTextColor);
-        setTextSize(TypedValue.COMPLEX_UNIT_PX, key.selectPreviewTextSize(drawParams)
+        // Elderly-phone shipped default: preview text renders at the same size/weight it has on
+        // the key itself (selectTextSize/selectTypeface), not the larger dedicated preview size -
+        // the user asked for the popup to show the letter "same size as it appeared on the key".
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, key.selectTextSize(drawParams)
                 * Settings.getValues().mFontSizeMultiplier);
-        KeyboardTypeface.applyToTextView(this, key.getPreviewLabel(), key.selectPreviewTypeface(drawParams));
+        KeyboardTypeface.applyToTextView(this, key.getPreviewLabel(), key.selectTypeface(drawParams));
         // TODO Should take care of temporaryShiftLabel here.
-        setTextAndScaleX(key.getPreviewLabel());
+        final String previewLabel = key.getPreviewLabel();
+        setTextAndScaleX(previewLabel);
+        // Elderly-phone shipped default: caps lock (not just temporary shift) underlines the
+        // previewed letter, so the two states are distinguishable at a glance while typing.
+        final boolean underline = isCapsLock && previewLabel != null && !previewLabel.isEmpty()
+                && Character.isLetter(previewLabel.charAt(0));
+        setPaintFlags(underline ? (getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG)
+                : (getPaintFlags() & ~Paint.UNDERLINE_TEXT_FLAG));
     }
 
     private void setTextAndScaleX(final String text) {

@@ -97,20 +97,18 @@ sealed interface KeyData : AbstractKeyData {
         //  keys could be replaced with toolbar keys, but parsing needs to be adjusted (should happen anyway...)
         private fun getCommaPopupKeys(params: KeyboardParams): List<String> {
             val keys = mutableListOf<String>()
-            if (!params.mId.deviceLocked)
-                keys.add("!icon/clipboard_normal_key|!code/key_clipboard")
-            if (!params.mId.emojiKeyEnabled && !params.mId.element.isNumberLayout)
+            // Elderly-phone shipped default: long-pressing comma opens the emoji screen directly
+            // and nothing else - clipboard/language-switch/floating/settings/TLD popups are
+            // deliberately omitted, and "!noPanelAutoPopupKey!" (same mechanism the shift key
+            // uses for caps-lock) skips the popup bubble entirely so there is no intermediate
+            // menu to accidentally tap the wrong thing in. The emoji spec must stay FIRST in this
+            // list: the hint icon shown above comma is popupSet.getPopupKeyLabels().firstOrNull()
+            // (see PopupKeysUtils.getHintText, POPUP_KEYS_LAYOUT), evaluated on the raw list
+            // before the marker is consumed/nulled - putting the marker first would make the
+            // hint try to render "!noPanelAutoPopupKey!" instead of the emoji icon.
+            if (!params.mId.emojiKeyEnabled && !params.mId.element.isNumberLayout) {
                 keys.add("!icon/emoji_normal_key|!code/key_emoji")
-            if (!params.mId.languageSwitchKeyEnabled && !params.mId.element.isNumberLayout && RichInputMethodManager.canSwitchLanguage())
-                keys.add("!icon/language_switch_key|!code/key_language_switch")
-            if (!params.mId.oneHandedModeEnabled && !Settings.getValues().mIsFloatingKeyboard)
-                keys.add("!icon/start_onehanded_mode_key|!code/key_toggle_onehanded")
-            if (!params.mId.deviceLocked)
-                keys.add(ToolbarKey.FLOATING.name.lowercase())
-            if (!params.mId.deviceLocked)
-                keys.add("!icon/settings_key|!code/key_settings")
-            if (shouldShowTldPopups(params)) {
-                keys.add(",")
+                keys.add("!noPanelAutoPopupKey!")
             }
             return keys
         }
@@ -366,7 +364,7 @@ sealed interface KeyData : AbstractKeyData {
             KeyType.LOCK -> Key.BACKGROUND_TYPE_FUNCTIONAL
             null -> getDefaultBackground(params)
         }
-        if (background == Key.BACKGROUND_TYPE_FUNCTIONAL)
+        if (background == Key.BACKGROUND_TYPE_FUNCTIONAL || background == Key.BACKGROUND_TYPE_SYMBOL)
             newLabelFlags = newLabelFlags or Key.LABEL_FLAGS_FOLLOW_FUNCTIONAL_TEXT_COLOR
 
         return if (newCode == KeyCode.UNSPECIFIED || newCode == KeyCode.MULTIPLE_CODE_POINTS) {
@@ -410,7 +408,8 @@ sealed interface KeyData : AbstractKeyData {
     private fun getDefaultBackground(params: KeyboardParams): Int {
         // functional keys
         when (label) { // or use code?
-            KeyLabel.SYMBOL_ALPHA, KeyLabel.SYMBOL, KeyLabel.ALPHA, KeyLabel.COMMA, KeyLabel.PERIOD, KeyLabel.DELETE,
+            KeyLabel.SYMBOL_ALPHA, KeyLabel.SYMBOL, KeyLabel.ALPHA -> return Key.BACKGROUND_TYPE_SYMBOL
+            KeyLabel.COMMA, KeyLabel.PERIOD, KeyLabel.DELETE,
             KeyLabel.COM, KeyLabel.LANGUAGE_SWITCH, KeyLabel.NUMPAD, KeyLabel.DPAD, KeyLabel.CTRL, KeyLabel.ALT,
             KeyLabel.FN, KeyLabel.META, KeyLabel.EMOJI_SEARCH, toolbarKeyStrings[ToolbarKey.EMOJI] -> return Key.BACKGROUND_TYPE_FUNCTIONAL
             KeyLabel.SPACE, KeyLabel.ZWNJ -> return Key.BACKGROUND_TYPE_SPACEBAR
