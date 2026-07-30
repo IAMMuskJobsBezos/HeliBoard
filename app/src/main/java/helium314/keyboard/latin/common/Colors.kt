@@ -49,6 +49,10 @@ interface Colors {
     /** get the colorInt */
     @ColorInt fun get(color: ColorType): Int
 
+    /** fixed black color filter, used for icons that must not follow the theme's accent color
+     *  (e.g. the shift key icon, see [ColorType.SHIFT_KEY_ICON]) */
+    val blackColorFilter: ColorFilter get() = colorFilter(Color.BLACK)
+
     /** apply a color to the [drawable], may be through color filter or tint (with or without state list) */
     fun setColor(drawable: Drawable, color: ColorType)
 
@@ -275,7 +279,10 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
 
     override fun get(color: ColorType): Int = when (color) {
         TOOL_BAR_KEY_ENABLED_BACKGROUND, EMOJI_CATEGORY_SELECTED, ACTION_KEY_BACKGROUND,
-        CLIPBOARD_PIN, SHIFT_KEY_ICON -> accent
+        CLIPBOARD_PIN -> accent
+        // elderly-phone shipped default: shift icon is always black, not the theme accent color
+        // (which otherwise ends up matching e.g. the action/enter key and is hard to read)
+        SHIFT_KEY_ICON -> Color.BLACK
         AUTOFILL_BACKGROUND_CHIP, GESTURE_PREVIEW, POPUP_KEYS_BACKGROUND, MORE_SUGGESTIONS_BACKGROUND, KEY_PREVIEW_BACKGROUND -> adjustedBackground
         TOOL_BAR_EXPAND_KEY_BACKGROUND -> if (!isNight) accent else doubleAdjustedBackground
         GESTURE_TRAIL -> gesture
@@ -328,7 +335,8 @@ class DynamicColors(context: Context, override val themeStyle: String, override 
     }
 
     private fun getColorFilter(color: ColorType): ColorFilter? = when (color) {
-        EMOJI_CATEGORY_SELECTED, CLIPBOARD_PIN, SHIFT_KEY_ICON -> accentColorFilter
+        EMOJI_CATEGORY_SELECTED, CLIPBOARD_PIN -> accentColorFilter
+        SHIFT_KEY_ICON -> blackColorFilter
         REMOVE_SUGGESTION_ICON, EMOJI_CATEGORY, KEY_TEXT,
             KEY_ICON, ONE_HANDED_MODE_BUTTON, TOOL_BAR_KEY, TOOL_BAR_EXPAND_KEY -> keyTextFilter
         KEY_PREVIEW_BACKGROUND -> adjustedBackgroundFilter
@@ -429,7 +437,11 @@ class DefaultColors (
             adjustedBackground = darken(background)
             doubleAdjustedBackground = darken(adjustedBackground)
         }
-        adjustedBackgroundStateList = pressedStateList(doubleAdjustedBackground, adjustedBackground)
+        // elderly-phone shipped default: the selected long-press popup key (POPUP_KEYS_BACKGROUND,
+        // the only other consumer of this list) highlights in the theme's accent/lavender color,
+        // not a neutral background shade, so it's clearly visible as "the selected one" rather
+        // than just a slightly different gray.
+        adjustedBackgroundStateList = pressedStateList(accent, adjustedBackground)
 
         val stripBackground: Int
         val pressedStripElementBackground: Int
@@ -488,7 +500,10 @@ class DefaultColors (
 
     override fun get(color: ColorType): Int = when (color) {
         TOOL_BAR_KEY_ENABLED_BACKGROUND, EMOJI_CATEGORY_SELECTED, ACTION_KEY_BACKGROUND,
-            CLIPBOARD_PIN, SHIFT_KEY_ICON -> accent
+            CLIPBOARD_PIN -> accent
+        // elderly-phone shipped default: shift icon is always black, not the theme accent color
+        // (which otherwise ends up matching e.g. the action/enter key and is hard to read)
+        SHIFT_KEY_ICON -> Color.BLACK
         AUTOFILL_BACKGROUND_CHIP -> if (themeStyle == STYLE_MATERIAL && !hasKeyBorders) background else adjustedBackground
         GESTURE_PREVIEW, POPUP_KEYS_BACKGROUND, MORE_SUGGESTIONS_BACKGROUND -> adjustedBackground
         KEY_PREVIEW_BACKGROUND -> keyPreviewBackground ?: adjustedBackground
@@ -567,7 +582,8 @@ class DefaultColors (
     }
 
     private fun getColorFilter(color: ColorType): ColorFilter? = when (color) {
-        EMOJI_CATEGORY_SELECTED, CLIPBOARD_PIN, SHIFT_KEY_ICON -> accentColorFilter
+        EMOJI_CATEGORY_SELECTED, CLIPBOARD_PIN -> accentColorFilter
+        SHIFT_KEY_ICON -> blackColorFilter
         KEY_TEXT, KEY_ICON -> keyTextFilter
         REMOVE_SUGGESTION_ICON, EMOJI_CATEGORY, ONE_HANDED_MODE_BUTTON, TOOL_BAR_KEY, TOOL_BAR_EXPAND_KEY -> suggestionTextFilter
         KEY_PREVIEW_BACKGROUND -> keyPreviewBackgroundFilter

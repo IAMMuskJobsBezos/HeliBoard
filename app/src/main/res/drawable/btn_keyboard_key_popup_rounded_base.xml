@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Elderly-phone shipped default: the unpressed state is fully transparent so the popup panel's
+     own single rounded pill background (keyboard_popup_panel_background_rounded_base) shows
+     through underneath every key uniformly - only the pressed/selected key draws a highlight on
+     top of it. This reads as one continuous pill with a highlight that moves between options,
+     instead of each key being its own separate white cell divided from its neighbors. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
@@ -8,8 +13,7 @@
     </item>
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@android:color/white" />
-            <corners android:radius="10dp" />
+            <solid android:color="#00FFFFFF" />
         </shape>
     </item>
 </selector>
