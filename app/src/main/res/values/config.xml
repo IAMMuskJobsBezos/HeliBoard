@@ -54,14 +54,16 @@
     <dimen name="config_key_hint_letter_padding">1dp</dimen>
     <dimen name="config_key_shifted_letter_hint_padding">2dp</dimen>
 
-    <dimen name="config_suggestions_strip_height">40dp</dimen>
-    <dimen name="config_suggestions_strip_edge_key_width">36dp</dimen>
-    <dimen name="config_more_suggestions_row_height">40dp</dimen>
+    <!-- Elderly-phone shipped default: taller strip, bigger edge/voice touch targets, bigger
+         suggestion text - dexterity accommodation (was 40dp/36dp/18dp). -->
+    <dimen name="config_suggestions_strip_height">58dp</dimen>
+    <dimen name="config_suggestions_strip_edge_key_width">48dp</dimen>
+    <dimen name="config_more_suggestions_row_height">48dp</dimen>
     <integer name="config_max_more_suggestions_row">6</integer>
     <fraction name="config_min_more_suggestions_width">90%</fraction>
     <dimen name="config_suggestion_min_width">44dp</dimen>
     <dimen name="config_suggestion_text_horizontal_padding">6dp</dimen>
-    <dimen name="config_suggestion_text_size">18dp</dimen>
+    <dimen name="config_suggestion_text_size">24dp</dimen>
     <dimen name="config_more_suggestions_hint_text_size">27dp</dimen>
 
     <!-- Gesture floating preview text parameters -->

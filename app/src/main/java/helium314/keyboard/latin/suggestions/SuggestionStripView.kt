@@ -5,11 +5,13 @@
  */
 package helium314.keyboard.latin.suggestions
 
+import android.animation.LayoutTransition
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.text.TextUtils
@@ -23,6 +25,7 @@ import android.view.View
 import android.view.View.OnLongClickListener
 import android.view.ViewGroup
 import android.view.accessibility.AccessibilityEvent
+import android.view.animation.DecelerateInterpolator
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -119,6 +122,7 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
     // toolbar views, drawables and setup
     private val toolbar: ViewGroup = findViewById(R.id.toolbar)
     private val toolbarContainer: View = findViewById(R.id.toolbar_container)
+    private val suggestionsStripWrapper: ViewGroup = findViewById(R.id.suggestions_strip_wrapper)
     private val pinnedKeys: ViewGroup = findViewById(R.id.pinned_keys)
     private val suggestionsStrip: ViewGroup = findViewById(R.id.suggestions_strip)
     private val toolbarExpandKey = findViewById<ImageButton>(R.id.suggestions_strip_toolbar_key)
@@ -127,6 +131,10 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
     private val defaultToolbarBackground: Drawable = toolbarExpandKey.background
     private val enabledToolKeyBackground = GradientDrawable()
     private var direction = 1 // 1 if LTR, -1 if RTL
+    private var voicePillView: View? = null
+    // Must be initialized before the init block below - it calls updateKeys() ->
+    // updateVoiceKey() -> updateVoicePillStretch(), which reads this.
+    private var suggestedWords = SuggestedWords.getEmptyInstance()
 
     private val toolbarKeyLayoutParams = LinearLayout.LayoutParams(
         resources.getDimensionPixelSize(R.dimen.config_suggestions_strip_edge_key_width),
@@ -157,6 +165,18 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
             setToolbarVisibility(true)
         }
 
+        // The voice pill's stretch/collapse (see updateVoicePillStretch) changes pinnedKeys' and
+        // suggestionsStrip's widths via layoutParams, which android:animateLayoutChanges="true"
+        // (see suggestions_strip.xml) does NOT animate on its own - that XML attribute only wires
+        // up APPEARING/DISAPPEARING, not CHANGING, which must be enabled in code. Without this,
+        // the pill's right edge stays anchored (it's flush against the row's end) but the resize
+        // itself snaps instead of sliding.
+        suggestionsStripWrapper.layoutTransition?.apply {
+            enableTransitionType(LayoutTransition.CHANGING)
+            setDuration(LayoutTransition.CHANGING, VOICE_PILL_COLLAPSE_MS)
+            setInterpolator(LayoutTransition.CHANGING, DecelerateInterpolator())
+        }
+
         // toolbar keys setup (no need to hide them any more when locked, because then suggestion strip is gone anyway
         for (key in getEnabledToolbarKeys(context.prefs())) {
             val button = createToolbarKey(context, key)
@@ -167,6 +187,7 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         for (pinnedKey in getPinnedToolbarKeys(context.prefs())) {
             if (pinnedKey == ToolbarKey.VOICE) {
                 val pill = createVoicePillKey(context, colors)
+                voicePillView = pill
                 pinnedKeys.addView(pill)
             } else {
                 val button = createToolbarKey(context, pinnedKey)
@@ -188,7 +209,6 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
     }
 
     private lateinit var listener: Listener
-    private var suggestedWords = SuggestedWords.getEmptyInstance()
     private var startIndexOfMoreSuggestions = 0
     private var isExternalSuggestionVisible = false // Required to disable the more suggestions if other suggestions are visible
     private val layoutHelper = SuggestionStripLayoutHelper(context, attrs, defStyle, wordViews, dividerViews, debugInfoViews)
@@ -516,9 +536,51 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         // one yet - that's a separate, not-yet-built phase). It's a no-op tap until that engine
         // exists, but it must always be present in the row rather than flicker in and out.
         pinnedKeys.findViewWithTag<View>(ToolbarKey.VOICE)?.isVisible = true
+        updateVoicePillStretch()
+    }
+
+    /**
+     * With no word suggestions to show, [suggestionsStrip] sits empty next to the pill, reading
+     * as dead space. Stretching the pill to fill that space (rather than leaving it hugging the
+     * edge) gives the elder user one obvious, thumb-sized target instead of a small pill floating
+     * next to a blank strip - centered voice bar, no suggestion strip, since there's no text to
+     * suggest against. Shrinks straight back to a small pill the moment real suggestions have
+     * room to show.
+     */
+    private fun updateVoicePillStretch() {
+        val pill = voicePillView ?: return
+        val pinnedParams = pinnedKeys.layoutParams as? LinearLayout.LayoutParams ?: return
+        val pillParams = pill.layoutParams as? LinearLayout.LayoutParams ?: return
+        val suggestionsParams = suggestionsStrip.layoutParams as? LinearLayout.LayoutParams ?: return
+        // Punctuation suggestions (shown on an empty field) aren't real word candidates - the
+        // strip reads as visually empty either way, so treat both as "nothing to show". Never
+        // stretch while an external suggestion view (e.g. clipboard history) is hosted in
+        // suggestionsStrip - that content must stay visible regardless of suggestedWords.
+        val stretch = (suggestedWords.isEmpty || suggestedWords.isPunctuationSuggestions) && !isExternalSuggestionVisible
+        // suggestionsStrip normally shares layout_weight="1" with this row to claim the leftover
+        // space itself (see suggestions_strip.xml); zero it out here so that space goes to the
+        // pill instead of being split between an empty strip and the pill.
+        suggestionsParams.weight = if (stretch) 0f else 1f
+        pinnedParams.width = if (stretch) 0 else LinearLayout.LayoutParams.WRAP_CONTENT
+        pinnedParams.weight = if (stretch) 1f else 0f
+        pillParams.width = if (stretch) LinearLayout.LayoutParams.MATCH_PARENT else LinearLayout.LayoutParams.WRAP_CONTENT
+        suggestionsStrip.layoutParams = suggestionsParams
+        pinnedKeys.layoutParams = pinnedParams
+        pill.layoutParams = pillParams
+        // Take the suggestion strip fully out (not just zero-width) so nothing of it remains
+        // when there's only the voice bar to show. updateKeys() below reads suggestionsStrip's
+        // PRE-stretch visibility for pinnedKeys (captured before this function runs), so toggling
+        // this here can never also hide the pill - that coupling is what caused the pill row to
+        // vanish entirely the last time this was attempted.
+        suggestionsStrip.isVisible = !stretch
     }
 
     private fun updateKeys() {
+        // Captured before updateVoiceKey() (-> updateVoicePillStretch()) can change
+        // suggestionsStrip's visibility for the stretch/empty state - pinnedKeys must follow
+        // suggestionsStrip's toolbar-toggle/global-visibility state only, never the stretch state,
+        // or the voice pill inside pinnedKeys gets hidden along with the empty strip.
+        val pinnedKeysVisibility = suggestionsStrip.visibility
         updateVoiceKey()
         val settingsValues = Settings.getValues()
 
@@ -532,7 +594,7 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         }
 
         toolbarExpandKey.setOnClickListener(if (!toolbarIsExpandable) null else this)
-        pinnedKeys.visibility = suggestionsStrip.visibility
+        pinnedKeys.visibility = pinnedKeysVisibility
         isExternalSuggestionVisible = false
     }
 
@@ -571,9 +633,14 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         val navy = "#0B1B41".toColorInt()
         val strokeWidthPx = 2.dpToPx(resources)
         val cornerRadiusPx = 999.dpToPx(resources).toFloat()
-        val horizontalPaddingPx = 14.dpToPx(resources)
-        val iconTextGapPx = 6.dpToPx(resources)
-        val iconSizePx = 22.dpToPx(resources)
+        // Elderly-phone shipped default: bigger touch target/icon to match the taller strip
+        // (config_suggestions_strip_height) - dexterity accommodation (was 14/6/22dp). Padding
+        // and gap pulled back in twice now (20/8dp, then 14/6dp) so the collapsed pill leaves the
+        // suggestion row more room when both are showing side by side; icon size (the touch
+        // target) is untouched.
+        val horizontalPaddingPx = 9.dpToPx(resources)
+        val iconTextGapPx = 0.dpToPx(resources)
+        val iconSizePx = 32.dpToPx(resources)
 
         val pillBackground = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
@@ -583,7 +650,11 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         }
 
         val icon = ImageView(context).apply {
-            setImageDrawable(KeyboardIconsSet.instance.getNewDrawable(ToolbarKey.VOICE.name, context))
+            // Lighter faux-bold than the rest of the keyboard's icons: the standard 0.8dp
+            // strength (see KeyboardIconsSet) read as too heavy/blurry at this icon's larger
+            // 32dp size next to the "Voice" label - a touch of weight, less than the label's,
+            // just enough that the glyph doesn't look thin beside it.
+            setImageDrawable(KeyboardIconsSet.instance.getNewDrawable(ToolbarKey.VOICE.name, context, boldOffsetDp = 0.35f))
             setColorFilter(navy)
             layoutParams = LinearLayout.LayoutParams(iconSizePx, iconSizePx)
         }
@@ -591,6 +662,12 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
             text = "Voice" // matches the "Voice to text" / "Voice" pill used elsewhere in the app suite
             setTextColor(navy)
             setSingleLine(true)
+            // Faux semi-bold via a slight paint stroke - darker than the plain regular weight
+            // without the full heaviness of switching to a true bold typeface. Software layer
+            // type is required: hardware-accelerated Canvas ignores Paint.strokeWidth on text.
+            paint.strokeWidth = 0.6f * resources.displayMetrics.density
+            paint.style = Paint.Style.FILL_AND_STROKE
+            setLayerType(View.LAYER_TYPE_SOFTWARE, paint)
         }
 
         val pill = LinearLayout(context).apply {
@@ -618,6 +695,7 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         @JvmField
         var DEBUG_SUGGESTIONS = false
         private const val DEBUG_INFO_TEXT_SIZE_IN_DIP = 6.5f
+        private const val VOICE_PILL_COLLAPSE_MS = 200L
         private val TAG = SuggestionStripView::class.java.simpleName
     }
 }

@@ -30,6 +30,9 @@
         <item name="functionalKeyBackground">@drawable/btn_keyboard_key_functional_rect_rounded_base_border</item>
         <item name="symbolKeyBackground">@drawable/btn_keyboard_key_functional_rounded_base_border</item>
         <item name="spacebarBackground">@drawable/btn_keyboard_key_rounded_base_border</item>
+        <!-- Elderly-phone shipped default: every key label - letters, numbers, symbols, function
+             keys - renders bold rather than the regular weight other themes use. -->
+        <item name="keyTypeface">bold</item>
     </style>
 
     <style
@@ -42,6 +45,9 @@
         <item name="spacebarBackground">@drawable/btn_keyboard_key_rounded_base_border</item>
         <item name="keyPreviewBackground">@drawable/keyboard_key_feedback_background_circle_elder</item>
         <item name="keyPreviewOffset">@dimen/config_key_preview_offset_elder</item>
+        <!-- Elderly-phone shipped default: every key label - letters, numbers, symbols, function
+             keys - renders bold rather than the regular weight other themes use. -->
+        <item name="keyTypeface">bold</item>
     </style>
 
     <style
@@ -67,6 +73,9 @@
         parent="PopupKeysKeyboardView.Rounded_Base">
         <item name="android:background">@drawable/keyboard_popup_panel_background_rounded_base</item>
         <item name="keyBackground">@drawable/btn_keyboard_key_popup_rounded_base</item>
+        <!-- Long-press popup keys (accented variants) get the same bold treatment as the main
+             keyboard - see MainKeyboardView.Rounded_Base_Border. -->
+        <item name="keyTypeface">bold</item>
     </style>
 
     <style

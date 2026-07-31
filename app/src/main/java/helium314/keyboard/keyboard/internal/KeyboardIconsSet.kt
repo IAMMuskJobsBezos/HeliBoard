@@ -3,6 +3,7 @@ package helium314.keyboard.keyboard.internal
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.LayerDrawable
 import androidx.core.content.ContextCompat
 import helium314.keyboard.keyboard.KeyboardTheme
 import helium314.keyboard.latin.R
@@ -13,6 +14,7 @@ import helium314.keyboard.latin.utils.Log
 import helium314.keyboard.latin.utils.ToolbarKey
 import helium314.keyboard.latin.utils.prefs
 import java.util.Locale
+import kotlin.math.roundToInt
 
 class KeyboardIconsSet private constructor() {
     var iconIds = emptyMap<String, Int>()
@@ -35,8 +37,9 @@ class KeyboardIconsSet private constructor() {
         ids.forEach { (name, id) ->
             try {
                 val icon = ContextCompat.getDrawable(context, id) ?: return@forEach
-                icon.setBounds(0, 0, icon.intrinsicWidth, icon.intrinsicHeight)
-                iconsByName[name] = icon
+                val bolded = fauxBoldIcon(context, icon)
+                bolded.setBounds(0, 0, bolded.intrinsicWidth, bolded.intrinsicHeight)
+                iconsByName[name] = bolded
             } catch (_: Resources.NotFoundException) {
                 Log.w(TAG, "Drawable resource for icon $name not found")
             }
@@ -48,9 +51,36 @@ class KeyboardIconsSet private constructor() {
         iconsByName[it] ?: iconsByName[alternativeNames[it]]
     }
 
-    /** gets drawable from resources, with mutate (might be necessary to avoid coloring issues...) */
-    fun getNewDrawable(name: String?, context: Context): Drawable? = name?.lowercase(Locale.US)?.let { name ->
-        (iconIds[name] ?: iconIds[alternativeNames[name]])?.let { ContextCompat.getDrawable(context, it)?.mutate() }
+    /**
+     * Gets drawable from resources, with mutate (might be necessary to avoid coloring issues...).
+     * [boldOffsetDp] controls the faux-bold strength applied by [fauxBoldIcon] - pass a smaller
+     * value than the default for an icon that needs to look less heavy than the rest of the
+     * keyboard (e.g. the voice pill's larger mic icon, see SuggestionStripView), or null to skip
+     * bolding entirely.
+     */
+    fun getNewDrawable(name: String?, context: Context, boldOffsetDp: Float? = 0.8f): Drawable? = name?.lowercase(Locale.US)?.let { name ->
+        (iconIds[name] ?: iconIds[alternativeNames[name]])?.let {
+            ContextCompat.getDrawable(context, it)?.mutate()?.let { d ->
+                if (boldOffsetDp == null) d else fauxBoldIcon(context, d, boldOffsetDp)
+            }
+        }
+    }
+
+    // Elderly-phone shipped default: every keyboard icon (Enter, Backspace, Shift, and the rest)
+    // renders thicker than its source vector, matching the bold text-label treatment
+    // (keyTypeface=bold, see themes-rounded-base-border.xml) used everywhere else on this
+    // keyboard. These icons are solid-fill vector paths with no strokeWidth to bump, so this
+    // overlays several offset copies of the same drawable to thicken the glyph - the classic
+    // "faux bold" trick for a source that has no true bold weight. A single interception point
+    // (here, not per-icon drawables) keeps every icon - including future ones - covered.
+    private fun fauxBoldIcon(context: Context, drawable: Drawable, offsetDp: Float = 0.8f): Drawable {
+        val offsetPx = (offsetDp * context.resources.displayMetrics.density).roundToInt().coerceAtLeast(1)
+        val offsets = listOf(0 to 0, offsetPx to 0, -offsetPx to 0, 0 to offsetPx, 0 to -offsetPx)
+        return LayerDrawable(Array(offsets.size) { drawable }).apply {
+            offsets.forEachIndexed { index, (dx, dy) ->
+                setLayerInset(index, offsetPx + dx, offsetPx + dy, offsetPx - dx, offsetPx - dy)
+            }
+        }
     }
 
     companion object {
