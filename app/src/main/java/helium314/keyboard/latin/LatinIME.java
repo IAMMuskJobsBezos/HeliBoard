@@ -124,6 +124,10 @@ public class LatinIME extends InputMethodService implements
      */
     private static final String SCHEME_PACKAGE = "package";
 
+    // Set this on an EditText's privateImeOptions (e.g. "switchToVoiceShortcut") before raising
+    // the keyboard to jump straight to the shortcut IME (ElderVoice) - see onStartInputViewInternal.
+    public static final String IME_OPTION_SWITCH_TO_VOICE_SHORTCUT = "switchToVoiceShortcut";
+
     final Settings mSettings;
     public final KeyboardActionListener mKeyboardActionListener;
     private int mOriginalNavBarColor = 0;
@@ -889,6 +893,13 @@ public class LatinIME extends InputMethodService implements
         Log.i(TAG, (restarting ? "Res" : "S") +"tarting input. Cursor position = " + editorInfo.initialSelStart + "," + editorInfo.initialSelEnd);
         if (DebugFlags.DEBUG_ENABLED) {
             EditorInfoCompatUtils.INSTANCE.debugLog(editorInfo, TAG);
+        }
+
+        // Lets a client app's "Voice to text" button land straight on the shortcut IME (ElderVoice)
+        // instead of the user having to notice and tap this keyboard's own mic key - external apps
+        // can't call the privileged switchInputMethod() themselves, only an already-bound IME can.
+        if (InputAttributes.inPrivateImeOptions(null, IME_OPTION_SWITCH_TO_VOICE_SHORTCUT, editorInfo)) {
+            mRichImm.switchToShortcutIme(this);
         }
 
         // In landscape mode, this method gets called without the input view being created.
