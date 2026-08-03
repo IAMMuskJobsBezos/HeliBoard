@@ -127,6 +127,12 @@ class RichInputMethodManager private constructor() {
     }
 
     fun switchToShortcutIme(inputMethodService: InputMethodService) = scope.launch {
+        // refreshSubtypeCaches() also launches updateShortcutIme() independently, but that's a
+        // separate coroutine with no ordering guarantee relative to this one - on a cold IME bind
+        // (e.g. the very first keyboard raise after switching apps) this coroutine could run
+        // before that one finishes, reading a still-empty `shortcuts` and silently no-opping
+        // instead of switching. Refresh it here too so this call is self-sufficient.
+        updateShortcutIme()
         val imiId = shortcuts.firstOrNull()?.imi?.id ?: return@launch
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             inputMethodService.switchInputMethod(imiId, shortcuts.first().subtype)
